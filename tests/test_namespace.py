@@ -1,26 +1,6 @@
 import pytest
 import namespace as ns
 
-def test_set_in_path():
-    cfg = ns.Namespace()
-    ns.set_in_path(cfg, 'Testing.One.Two.Three.name', '42')
-    assert cfg.Testing.One.Two.Three.name == '42'
-
-
-def test_set_in_path_section_is_value():
-    cfg = ns.Namespace()
-    cfg.Section = ''
-    with pytest.raises(ns.ConfigurationError):
-        ns.set_in_path(cfg, "Section.name", '42')
-
-
-def test_set_in_path_section_exists():
-    cfg = ns.Namespace()
-    cfg.Section = ns.Namespace()
-    ns.set_in_path(cfg, "Section.name", '42')
-    assert cfg.Section.name == '42' # pylint: disable=no-member
-
-
 def test_del():
     cfg = ns.Namespace()
     cfg.attr = ''
@@ -28,19 +8,6 @@ def test_del():
     del cfg.attr  # type: ignore
     assert 'attr' not in cfg
 
-
-def test_get_in_path():
-    cfg = ns.Namespace()
-    assert ns.get_in_path(cfg, 'Section.value') is None
-    assert ns.get_in_path(cfg, 'Section.value', '') == ''
-    cfg.Section = ns.Namespace()
-    assert ns.get_in_path(cfg, 'Section.value') is None
-    assert ns.get_in_path(cfg, 'Section.value', '') == ''
-    cfg.Section.value = '42'
-    assert ns.get_in_path(cfg, 'Section.value') == '42'
-    cfg.Section = ''
-    assert ns.get_in_path(cfg, 'Section.value') is None
-    
 
 def test_add_section():
     """ Tests adding a section if not present
@@ -55,6 +22,76 @@ def test_add_section():
     assert 'test' in cfg
     assert cfg['test'] is section
 
+
+def test_get_existing_section():
+    """ Tests retrieving an existing section
+    """
+    
+    cfg = ns.Namespace()
+    cfg.section = ns.Namespace()
+    cfg.section.name = "value"
+    
+    section = ns.get_section(cfg, 'section')
+    assert section, "Section should be found"
+    assert section.name == 'value', "Section should have expected property/value"
+    
+
+def test_check_section():
+    """ Tests the check_section method
+    """
+    
+    cfg = ns.Namespace()
+    cfg.section = ns.Namespace()
+    cfg.section.name = "value"
+    
+    # Retrieving a non-existing section should raise
+    with pytest.raises(ns.ConfigurationError) as e:
+        ns.check_section(cfg, 'zection')
+    
+    # An existing section should be returned
+    section = ns.check_section(cfg, 'section')
+    assert section, "Section should be found"
+    assert section.name == 'value', "Section should have expected property/value"
+    
+
+def test_check_default():
+    """ Tests the check_default method
+    """
+    
+    cfg = ns.Namespace()
+    cfg.name = "value"
+    
+    assert not ns.check_default(cfg, 'name', 42), "Property should not be set"
+    assert cfg.name == 'value', "Property unaltered"
+    
+    assert ns.check_default(cfg, 'name2', 42), "Property should be set"
+    assert 'name2' in cfg, "Property should be present"
+    assert cfg.name2 == 42, "Property should have expected value"
+    
+
+def test_check_oneof():
+    """ Tests the check_oneof method
+    """
+    
+    cfg = ns.Namespace()
+    cfg.namea = "v"
+    cfg.nameb = "x"
+    allowed = ['v', 'w']
+    
+    # Existing property, value allowed
+    ns.check_oneof(cfg, 'namea', allowed)
+    assert cfg.namea == 'v', "Property unaltered"
+    
+    # Existing property, value not allowed
+    with pytest.raises(ns.ConfigurationError) as e:
+        ns.check_oneof(cfg, 'nameb', allowed)
+    assert cfg.nameb == 'x', "Property unaltered"
+    
+    # Non-existing property, default specified
+    ns.check_oneof(cfg, 'namec', allowed, 'w')
+    assert 'namec' in cfg, "Property set"
+    assert cfg.namec == 'w', "Property should have default value"
+    
 
 def test_value_as_namespace_error():
     """ Tests getting a value as a section raises
@@ -110,6 +147,12 @@ def test_check_encoding():
     with pytest.raises(ns.ConfigurationError) as e:
         ns.check_encoding(cfg, 'enc', 'dummy')
     assert "is an unrecognised encoding" in e.value.args[0], f"Unexpected error msg: {e.value.args[0]}"
+    
+    # Default provided in code is not checked; this hould not raise
+    del cfg.enc  # type: ignore
+    ns.check_encoding(cfg, 'enc', 'dummy')
+    assert cfg.enc == 'dummy', "Property must have unchecked value"
+    
 
 
 def test_check_missing_attribute():
