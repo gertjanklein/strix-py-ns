@@ -1,0 +1,3 @@
+# pyns
+
+Python namespace object
