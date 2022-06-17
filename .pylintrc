@@ -96,9 +96,12 @@ disable=raw-checker-failed,
         protected-access,
 # Removed for test files
         trailing-whitespace,
+        trailing-newlines,
         invalid-name,
         line-too-long,
-        multiple-statements
+        multiple-statements,
+        missing-function-docstring,
+        missing-module-docstring
 
 # Enable the message, report, category or checker with the given id(s). You can
 # either give multiple identifier separated by comma (,) or put this option
