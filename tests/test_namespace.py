@@ -1,7 +1,10 @@
+"""Various namespace tests."""
 import pytest
 import namespace as ns
 
 def test_del():
+    """Test that del works."""
+    
     cfg = ns.Namespace()
     cfg.attr = ''
     assert 'attr' in cfg
@@ -10,8 +13,8 @@ def test_del():
 
 
 def test_add_section():
-    """ Tests adding a section if not present
-    """
+    """Tests adding a section if not present."""
+    
     cfg = ns.Namespace()
     section = ns.get_section(cfg, 'test')
     assert section is None
@@ -24,8 +27,7 @@ def test_add_section():
 
 
 def test_get_existing_section():
-    """ Tests retrieving an existing section
-    """
+    """Tests retrieving an existing section."""
     
     cfg = ns.Namespace()
     cfg.section = ns.Namespace()
@@ -37,15 +39,14 @@ def test_get_existing_section():
     
 
 def test_check_section():
-    """ Tests the check_section method
-    """
+    """Tests the check_section method."""
     
     cfg = ns.Namespace()
     cfg.section = ns.Namespace()
     cfg.section.name = "value"
     
     # Retrieving a non-existing section should raise
-    with pytest.raises(ns.ConfigurationError) as e:
+    with pytest.raises(ns.ConfigurationError):
         ns.check_section(cfg, 'zection')
     
     # An existing section should be returned
@@ -55,8 +56,7 @@ def test_check_section():
     
 
 def test_check_default():
-    """ Tests the check_default method
-    """
+    """Tests the check_default method."""
     
     cfg = ns.Namespace()
     cfg.name = "value"
@@ -70,8 +70,7 @@ def test_check_default():
     
 
 def test_check_oneof():
-    """ Tests the check_oneof method
-    """
+    """Tests the check_oneof method."""
     
     cfg = ns.Namespace()
     cfg.namea = "v"
@@ -83,7 +82,7 @@ def test_check_oneof():
     assert cfg.namea == 'v', "Property unaltered"
     
     # Existing property, value not allowed
-    with pytest.raises(ns.ConfigurationError) as e:
+    with pytest.raises(ns.ConfigurationError):
         ns.check_oneof(cfg, 'nameb', allowed)
     assert cfg.nameb == 'x', "Property unaltered"
     
@@ -94,8 +93,7 @@ def test_check_oneof():
     
 
 def test_value_as_namespace_error():
-    """ Tests getting a value as a section raises
-    """
+    """Tests getting a value as a section raises."""
 
     cfg = ns.Namespace()
     cfg.value = '42'
@@ -110,8 +108,7 @@ def test_value_as_namespace_error():
 
     
 def test_value_not_oneof_raises():
-    """ Tests that a value outside the allowed range raises
-    """
+    """Tests that a value outside the allowed range raises."""
 
     cfg = ns.Namespace()
     cfg.value = '42'
@@ -122,8 +119,7 @@ def test_value_not_oneof_raises():
 
 
 def test_value_not_present_raises():
-    """ Tests that a missing value raises
-    """
+    """Tests that a missing value raises."""
 
     cfg = ns.Namespace()
 
@@ -138,8 +134,7 @@ def test_value_not_present_raises():
 
 
 def test_check_encoding():
-    """ Tests errors on invalid encoding values
-    """
+    """Tests errors on invalid encoding values."""
 
     cfg = ns.Namespace()
     cfg.enc = 'CP900000'
@@ -156,29 +151,26 @@ def test_check_encoding():
 
 
 def test_check_missing_attribute():
-    """ Tests missing attribute raises KeyError
-    """
+    """Tests missing attribute raises KeyError."""
 
     cfg = ns.Namespace()
     with pytest.raises(AttributeError) as e:
-        value = cfg.value
+        _ = cfg.value
     assert e.value.args[0] == 'value', f"Unexpected error attribute: {e.value.args[0]}"
 
 
 def test_flattened_empty():
-    """ Tests the _flattened method on empty namespace.
-    """
+    """Tests the _flattened method on empty namespace."""
 
     cfg = ns.Namespace()
     seen = False
-    for n, v in cfg._flattened():
+    for _ in cfg._flattened():
         seen = True
     assert not seen, "Flattened returned a value where it shouldn't."
 
 
 def test_flattened():
-    """ Tests the _flattened method.
-    """
+    """Tests the _flattened method."""
 
     # A few flattened key, value pairs to test against
     tests = {

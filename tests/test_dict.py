@@ -1,11 +1,10 @@
-""" Tests converting from/to dicts """
+"""Tests converting from/to dicts."""
 
 import namespace as ns
 
 
 def test_ns2dict():
-    """ Tests the ns2dict helper
-    """
+    """Test the ns2dict helper."""
 
     cfg = ns.Namespace()
     ns.set_in_path(cfg, "Section.value", 42)
@@ -17,6 +16,8 @@ def test_ns2dict():
     
 
 def test_dict2ns():
+    """Test the dict2ns helper."""
+    
     input = {
         'l1name': 'l1name_value',
         'l1sec': {

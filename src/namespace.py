@@ -1,3 +1,4 @@
+
 """Provide a Namespace supporting both ns.value and ns['value'].
 
 Expected use is to represent configuration files. To that end,
@@ -7,10 +8,9 @@ validity.
 Nested namespaces have their name in a property "_name".
 """
 
-
-from types import SimpleNamespace
-from typing import Optional, Mapping, Iterable
 import codecs
+from types import SimpleNamespace
+from typing import Iterable, Mapping, Optional
 
 
 class Namespace(SimpleNamespace):
@@ -62,7 +62,7 @@ class Namespace(SimpleNamespace):
         return self.__dict__.get(key, default)
 
     def _flattened(self, _prefix=None):
-        """Yields (dotted name, value) pairs for all values."""
+        """Yield (dotted name, value) pairs for all values."""
         
         for key in self:
             if key == '_name':
@@ -113,7 +113,7 @@ def ns2dict(input:Namespace) -> dict:
 # =====
 
 def set_in_path(ns:Namespace, path:str, value):
-    """Sets a value in a sub-namespace, assuring it exists."""
+    """Set a value in a sub-namespace, assuring it exists."""
 
     parts = path.split('.')
     # Add sub-namespaces, if not present
@@ -129,7 +129,7 @@ def set_in_path(ns:Namespace, path:str, value):
     ns[value_name] = value
 
 def get_in_path(ns:Namespace, path:str, default=None):
-    """Gets a value in a sub-namespace, if present. Never raises."""
+    """Get a value in a sub-namespace, if present. Never raises."""
 
     assert '.' in path
     parts = path.split('.')
@@ -150,7 +150,7 @@ class ConfigurationError(ValueError):
     """Exception to signal detected error in configuration."""
 
 def get_section(config:Namespace, name:str, create=False) -> Optional[Namespace]:
-    """Returns a section if it exists; optionally creates if not."""
+    """Return a section if it exists; optionally creates if not."""
     
     section = config._get(name)
     if section is None:
@@ -186,7 +186,7 @@ def check_default(section:Namespace, name:str, default) -> bool:
     return False
 
 def check_oneof(section:Namespace, name:str, oneof:Iterable, default=None):
-    """Raises if value not in supplied list of options."""
+    """Raise if value not in supplied list of options."""
 
     value = section._get(name)
     if (value is None or value == '') and not default is None:
@@ -197,7 +197,7 @@ def check_oneof(section:Namespace, name:str, oneof:Iterable, default=None):
     raise ConfigurationError(f"Configuration error: {disp_name} must be one of {str(oneof)}")
 
 def check_notempty(section:Namespace, name:str):
-    """Raises if value not supplied or empty."""
+    """Raise if value not supplied or empty."""
 
     value = section._get(name)
     if value: return
@@ -205,7 +205,8 @@ def check_notempty(section:Namespace, name:str):
     raise ConfigurationError(f"Configuration error: {disp_name} must be present and non-empty")
 
 def check_encoding(section:Namespace, name:str, default):
-    """Raises if specified encoding is unknown."""
+    """Raise if specified encoding is unknown."""
+    
     if check_default(section, name, default):
         return
     encoding = section[name]
