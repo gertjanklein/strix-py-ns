@@ -9,50 +9,90 @@ Nested namespaces have their name in a property "_name".
 """
 
 import codecs
-from types import SimpleNamespace
 from typing import Iterable, Mapping, Optional
 
 
-class Namespace(SimpleNamespace):
+class Namespace:
     """Namespace that also supports mapping access."""
 
-    def __getitem__(self, name):
+    def __init__(self, **kwargs):
+        """Allow initializing with keyword arguments."""
+        
+        self.__dict__.update(kwargs)
+    
+    # ns['key']
+    
+    def __getitem__(self, key):
         """Add support for value = ns['key']."""
 
-        return self.__dict__[name]
+        return self.__dict__[key]
     
     def __setitem__(self, key, value):
         """Add support for ns['key'] = value."""
-
+        
+        # Don't allow overwriting methods with data
+        if key in self.__class__.__dict__:
+            raise ValueError(f"Setting key {key} is not allowed.")
         self.__dict__[key] = value
 
-    def __getattribute__(self, name):
-        """Add support for local attributes."""
+    def __delitem__(self, key):
+        """Add support for del ns['key']."""
+        
+        del self.__dict__[key]
 
-        try:
-            # If an actual attribute <name> is present, return that
-            return object.__getattribute__(self, name)
-        except AttributeError:
-            # Delegate to the key/value dictionary
-            try:
-                return self.__dict__[name]
-            except KeyError:
-                raise AttributeError(name) from None
+    # ns.key
     
-    def __delattr__(self, name):
-        """Add support for deleting values."""
+    def __getattr__(self, key):
+        """Add support for value = ns.key."""
+        
+        if key in self.__dict__:
+            return self.__dict__[key]
+        raise AttributeError(f"{key}")
 
-        d = object.__getattribute__(self, '__dict__')
-        del d[name]
+    def __setattr__(self, name, value):
+        """Add support for ns.key = value."""
+        
+        if name in self.__class__.__dict__:
+            raise ValueError(f"Setting attribute {name} is not allowed.")
+        self.__dict__[name] = value
 
-    def __contains__(self, name):
+    # key in ns
+    
+    def __contains__(self, key):
         """Add support for in operator."""
-        return self.__dict__.__contains__(name)
+        
+        return key in self.__dict__
 
+    # for key in ns
+    
     def __iter__(self):
         """Add support for iteration."""
 
-        return self.__dict__.__iter__()
+        return iter(self.__dict__)
+
+    # repr(ns), str(ns)
+    
+    def __repr__(self):
+        """Can be used to re-create objects."""
+        
+        attrs = []
+        for key, value in self.__dict__.items():
+            if isinstance(value, Namespace):
+                attrs.append(f"{key}={value.__repr__()}")
+            else:
+                attrs.append(f"{key}={value!r}")
+        return f"{self.__class__.__name__}({', '.join(attrs)})"
+
+    def __str__(self):
+        """Simplified dictionary-form representation."""
+        
+        attrs = []
+        for key, value in self.__dict__.items():
+            if isinstance(value, Namespace):
+                attrs.append(f"{key!r}: {value!s}")
+            else:
+                attrs.append(f"{key!r}: {value!r}")
+        return f"{{{', '.join(attrs)}}}"
 
     # ----- Helper methods
 
@@ -74,40 +114,51 @@ class Namespace(SimpleNamespace):
             else:
                 yield key, value
 
+    @staticmethod
+    def _from_dict(input:Mapping) -> 'Namespace':
+        """Create a namespace from a dictionary."""
+        
+        ns = Namespace()
+        for k, v in input.items():
+            if isinstance(v, dict):
+                ns[k] = dict2ns(v)
+                ns[k]['_name'] = k
+            elif isinstance(v, list):
+                ns[k] = v
+                for i, v2 in enumerate(v):
+                    if not isinstance(v2, dict):
+                        continue
+                    v[i] = dict2ns(v2)
+                    v[i]['_name'] = f'{k}[{i+1}]'
+            else:
+                ns[k] = v
+        
+        return ns
+
+    def _to_dict(self) -> dict:
+        """Convert a Namespace to a dict."""
+
+        d = {}
+        for k, v in self.__dict__.items():
+            if isinstance(v, Namespace):
+                d[k] = ns2dict(v)
+                if '_name' in d[k]:
+                    del d[k]['_name']
+            else:
+                d[k] = v
+        
+        return d
 
 
+# Backwards compatibility code
 
 def dict2ns(input:Mapping) -> Namespace:
     """Convert a dict to a namespace for attribute access."""
-
-    ns = Namespace()
-    for k, v in input.items():
-        if isinstance(v, dict):
-            ns[k] = dict2ns(v)
-            ns[k]['_name'] = k
-        elif isinstance(v, list):
-            ns[k] = v
-            for i, v2 in enumerate(v):
-                if not isinstance(v2, dict):
-                    continue
-                v[i] = dict2ns(v2)
-                v[i]['_name'] = f'{k}[{i+1}]'
-        else:
-            ns[k] = v
-    return ns
+    return Namespace._from_dict(input)
 
 def ns2dict(input:Namespace) -> dict:
     """Convert a Namespace to a dict."""
-
-    d = {}
-    for k, v in input.__dict__.items():
-        if isinstance(v, Namespace):
-            d[k] = ns2dict(v)
-            if '_name' in d[k]:
-                del d[k]['_name']
-        else:
-            d[k] = v
-    return d
+    return input._to_dict()
 
 
 # =====
